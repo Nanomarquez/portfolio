@@ -17,11 +17,6 @@ export default defineConfig({
         v3_relativeSplatPath: true,
         v3_throwAbortReason: true,
       },
-      routes(defineRoutes) {
-        return defineRoutes( (define) => {
-          define("/", "routes/_index.tsx");
-        });
-      },
       presets: [vercelPreset()]
     }),
     tsconfigPaths(),
