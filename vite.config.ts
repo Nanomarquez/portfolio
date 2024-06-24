@@ -3,7 +3,6 @@ import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { vercelPreset } from "@vercel/remix/vite"
 import { remixDevTools } from "remix-development-tools"
-import {  } from ""
 
 export default defineConfig({
   server : {
