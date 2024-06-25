@@ -31,8 +31,8 @@ export function ProjectSummary({
   alternate,
   ...rest
 }) {
-  const [focused, setFocused] = useState(true);
-  const [modelLoaded, setModelLoaded] = useState(true);
+  const [focused, setFocused] = useState(false);
+  const [modelLoaded, setModelLoaded] = useState(false);
   const { theme } = useTheme();
   const { width } = useWindowSize();
   const isHydrated = useHydrated();

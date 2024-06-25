@@ -5,9 +5,11 @@ import {
   Scripts,
   ScrollRestoration,
   useFetcher,
+  useLoaderData,
   useNavigation,
   useRouteError,
 } from '@remix-run/react';
+import { createCookieSessionStorage, json } from '@remix-run/cloudflare';
 import { ThemeProvider, themeStyles } from '~/components/theme-provider';
 import GothamBook from '~/assets/fonts/gotham-book.woff2';
 import GothamMedium from '~/assets/fonts/gotham-medium.woff2';
@@ -36,19 +38,54 @@ export const links = () => [
     type: 'font/woff2',
     crossOrigin: '',
   },
-  { rel: 'icon', href: '/favicon.ico' },
+  { rel: 'manifest', href: '/manifest.json' },
   { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
   { rel: 'shortcut_icon', href: '/shortcut.png', type: 'image/png', sizes: '64x64' },
   { rel: 'apple-touch-icon', href: '/icon-256.png', sizes: '256x256' },
   { rel: 'author', href: '/humans.txt', type: 'text/plain' },
 ];
 
+export const loader = async ({ request, context }) => {
+  const { url } = request;
+  const { pathname } = new URL(url);
+  const pathnameSliced = pathname.endsWith('/') ? pathname.slice(0, -1) : url;
+  const canonicalUrl = `${config.url}${pathnameSliced}`;
+
+  const { getSession, commitSession } = createCookieSessionStorage({
+    cookie: {
+      name: '__session',
+      httpOnly: true,
+      maxAge: 604_800,
+      path: '/',
+      sameSite: 'lax',
+      secrets: [' '],
+      secure: true,
+    },
+  });
+
+  const session = await getSession(request.headers.get('Cookie'));
+  const theme = session.get('theme') || 'dark';
+
+  return json(
+    { canonicalUrl, theme },
+    {
+      headers: {
+        'Set-Cookie': await commitSession(session),
+      },
+    }
+  );
+};
+
 export default function App() {
+  let { canonicalUrl, theme } = useLoaderData();
   const fetcher = useFetcher();
   const { state } = useNavigation();
-  const theme = "dark";
 
-  function toggleTheme(newTheme:string) {
+  if (fetcher.formData?.has('theme')) {
+    theme = fetcher.formData.get('theme');
+  }
+
+  function toggleTheme(newTheme) {
     fetcher.submit(
       { theme: newTheme ? newTheme : theme === 'dark' ? 'light' : 'dark' },
       { action: '/api/set-theme', method: 'post' }
@@ -71,11 +108,12 @@ export default function App() {
         <meta name="theme-color" content={theme === 'dark' ? '#111' : '#F2F2F2'} />
         <meta
           name="color-scheme"
-          content={theme === 'dark' ? 'dark light' : 'light dark'}
+          content={theme === 'light' ? 'light dark' : 'dark light'}
         />
         <style dangerouslySetInnerHTML={{ __html: themeStyles }} />
         <Meta />
         <Links />
+        <link rel="canonical" href={canonicalUrl} />
       </head>
       <body data-theme={theme}>
         <ThemeProvider theme={theme} toggleTheme={toggleTheme}>
